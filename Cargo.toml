@@ -4,6 +4,7 @@ edition = "2021"
 keywords = ["m5stack", "cardputer"]
 license = "MIT"
 name = "cardputer"
+readme = "README.md"
 repository = "https://github.com/syurazo/cardputer"
 resolver = "2"
 version = "0.1.0"
