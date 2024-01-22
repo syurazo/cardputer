@@ -1,5 +1,6 @@
 [package]
 description = "Utilities for M5Stack Cardputer"
+documentation = "https://docs.rs/cardputer"
 edition = "2021"
 keywords = ["m5stack", "cardputer"]
 license = "MIT"
