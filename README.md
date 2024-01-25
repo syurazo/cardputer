@@ -36,7 +36,7 @@ let mut keyboard = Keyboard::new(
     peripherals.pins.gpio7,
 )
 .unwrap();
-let keys = keyboard.get_key_codes().unwrap();
+let keys = keyboard.scan_pressed_keys().unwrap();
 ```
 
 ## Examples

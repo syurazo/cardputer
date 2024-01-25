@@ -179,7 +179,7 @@ macro_rules! pin_level {
 ///     peripherals.pins.gpio7,
 /// )
 /// .unwrap();
-/// let keys = keyboard.get_key_codes().unwrap();
+/// let keys = keyboard.scan_pressed_keys().unwrap();
 /// ```
 pub struct Keyboard<'a> {
     addr0: PinDriver<'a, Gpio8, Output>,
