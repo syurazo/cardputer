@@ -59,7 +59,3 @@ I (5642) key_monitor: [Space]
   :
 
 ```
-
-## TODO
-
-* Convert modifier keys and KeyUp/KeyDown events

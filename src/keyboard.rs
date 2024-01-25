@@ -14,6 +14,7 @@
 //!  -  L  L  | CTL OPT ALT  z   x   c   v   b   n   m   ,   .   /  SPC
 //! ```
 use anyhow::Result;
+use derive_getters::Getters;
 use esp_idf_hal::{
     gpio::{Gpio11, Gpio13, Gpio15, Gpio3, Gpio4, Gpio5, Gpio6, Gpio7, Gpio8, Gpio9},
     gpio::{Input, Level, Output, PinDriver},
@@ -157,6 +158,12 @@ macro_rules! pin_level {
     };
 }
 
+/// Keyboard scanner trait
+pub trait KeyboardScanner {
+    /// Scan the keyboard and return the Vector of KeyImprint.
+    fn scan_pressed_keys(&mut self) -> Result<Vec<KeyImprint>>;
+}
+
 /// Keyboard scanner for Cardputer
 ///
 /// # Examples
@@ -221,9 +228,11 @@ impl<'a> Keyboard<'a> {
             y6: PinDriver::input(y6)?,
         })
     }
+}
 
+impl KeyboardScanner for Keyboard<'_> {
     /// Scan the keyboard and return the Vector of KeyImprint.
-    pub fn scan_pressed_keys(&mut self) -> Result<Vec<KeyImprint>> {
+    fn scan_pressed_keys(&mut self) -> Result<Vec<KeyImprint>> {
         let mut keys: Vec<KeyImprint> = vec![];
         for i in 0..8 {
             self.addr0.set_level(pin_level!(i & 0b00000001))?;
@@ -253,5 +262,98 @@ impl<'a> Keyboard<'a> {
         }
 
         Ok(keys)
+    }
+}
+
+/// Structure that scans the keyboard and keeps track of state changes
+///
+/// # Examples
+///
+/// ```
+/// use cardputer::keyboard::{Keyboard, KeyboardState};
+///
+/// let peripherals = Peripherals::take().unwrap();
+///
+/// let mut keyboard = Keyboard::new(
+///     peripherals.pins.gpio8,
+///     peripherals.pins.gpio9,
+///     peripherals.pins.gpio11,
+///     peripherals.pins.gpio13,
+///     peripherals.pins.gpio15,
+///     peripherals.pins.gpio3,
+///     peripherals.pins.gpio4,
+///     peripherals.pins.gpio5,
+///     peripherals.pins.gpio6,
+///     peripherals.pins.gpio7,
+/// )
+/// .unwrap();
+///
+/// let mut keyboard_state = KeyboardState::new();
+/// keyboard_state.update(&mut keyboard).unwrap();
+/// log::info!("{:?}", keyboard_state.pressed_keys());
+/// log::info!("{:?}", keyboard_state.released_keys());
+/// ```
+#[derive(Debug, Getters)]
+pub struct KeyboardState {
+    is_fn_pressed: bool,
+    is_ctrl_pressed: bool,
+    is_shift_pressed: bool,
+    is_alt_pressed: bool,
+
+    hold_keys: Vec<KeyImprint>,
+    pressed_keys: Vec<KeyImprint>,
+    released_keys: Vec<KeyImprint>,
+}
+
+impl KeyboardState {
+    pub fn new() -> Self {
+        Self {
+            is_fn_pressed: false,
+            is_ctrl_pressed: false,
+            is_shift_pressed: false,
+            is_alt_pressed: false,
+            hold_keys: vec![],
+            pressed_keys: vec![],
+            released_keys: vec![],
+        }
+    }
+
+    /// Get the latest key state and update the Pressed/Released state
+    pub fn update(&mut self, keyboard: &mut impl KeyboardScanner) -> Result<()> {
+        let keys = keyboard.scan_pressed_keys()?;
+
+        self.pressed_keys.clear();
+        self.released_keys.clear();
+
+        self.is_fn_pressed = false;
+        self.is_ctrl_pressed = false;
+        self.is_shift_pressed = false;
+        self.is_alt_pressed = false;
+
+        for key in keys.iter() {
+            match key {
+                KeyImprint::LeftFn => self.is_fn_pressed = true,
+                KeyImprint::LeftCtrl => self.is_ctrl_pressed = true,
+                KeyImprint::LeftShift => self.is_shift_pressed = true,
+                KeyImprint::LeftAlt => self.is_alt_pressed = true,
+                x if !self.hold_keys.contains(x) => {
+                    self.pressed_keys.push(*x);
+                    self.hold_keys.push(*x);
+                }
+                _ => {}
+            }
+        }
+
+        for key in self.hold_keys.iter() {
+            if keys.contains(key) {
+                continue;
+            }
+            self.released_keys.push(*key);
+        }
+        for key in self.released_keys.iter() {
+            self.hold_keys.retain(|&x| x != *key);
+        }
+
+        Ok(())
     }
 }
