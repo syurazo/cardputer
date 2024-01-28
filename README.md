@@ -36,7 +36,10 @@ let mut keyboard = Keyboard::new(
     peripherals.pins.gpio7,
 )
 .unwrap();
-let keys = keyboard.scan_pressed_keys().unwrap();
+
+let mut keyboard_state = KeyboardState::default();
+keyboard_state.update(&mut keyboard).unwrap();
+let keys = keyboard_state.pressed_keys();
 ```
 
 ## Examples
@@ -45,9 +48,7 @@ Simple example that just outputs the pressed keys to log:info
 
 
 ```sh
-% cd examples
-% cargo build --bin key_monitor
-% espflash flash --monitor -p /dev/ttyACM0 target/xtensa-esp32s3-espidf/debug/key_monitor
+% cargo run --example key_monitor
   :
 I (2642) key_monitor: [Q]
 I (3142) key_monitor: [W]
@@ -57,5 +58,4 @@ I (4642) key_monitor: [T]
 I (5142) key_monitor: [Y]
 I (5642) key_monitor: [Space]
   :
-
 ```
