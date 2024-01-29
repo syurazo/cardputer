@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"cardputer":[["impl StructuralPartialEq for <a class=\"struct\" href=\"cardputer/keyboard/struct.ConversionRule.html\" title=\"struct cardputer::keyboard::ConversionRule\">ConversionRule</a>"],["impl StructuralPartialEq for <a class=\"enum\" href=\"cardputer/keyboard/enum.KeyImprint.html\" title=\"enum cardputer::keyboard::KeyImprint\">KeyImprint</a>"],["impl StructuralPartialEq for <a class=\"enum\" href=\"cardputer/keyboard/enum.Modified.html\" title=\"enum cardputer::keyboard::Modified\">Modified</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
