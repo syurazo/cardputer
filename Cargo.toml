@@ -8,7 +8,7 @@ name = "cardputer"
 readme = "README.md"
 repository = "https://github.com/syurazo/cardputer"
 resolver = "2"
-version = "0.1.2"
+version = "0.1.3"
 
 [profile.release]
 opt-level = "s"
