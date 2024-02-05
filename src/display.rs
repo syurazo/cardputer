@@ -71,7 +71,7 @@ where
     let mut drawable = Builder::st7789(SPIInterfaceNoCS::new(spi, rs))
         .with_invert_colors(ColorInversion::Inverted)
         .with_display_size(DISPLAY_SIZE_WIDTH, DISPLAY_SIZE_HEIGHT)
-        .with_window_offset_handler(|_| (40, 52))
+        .with_window_offset_handler(|_| (40, 53))
         .init(&mut Delay::new_default(), Some(rst))
         .map_err(|e| anyhow!("{:?}", e))?;
 
