@@ -157,7 +157,7 @@
     <span class="kw">let </span><span class="kw-2">mut </span>drawable = Builder::st7789(SPIInterfaceNoCS::new(spi, rs))
         .with_invert_colors(ColorInversion::Inverted)
         .with_display_size(DISPLAY_SIZE_WIDTH, DISPLAY_SIZE_HEIGHT)
-        .with_window_offset_handler(|<span class="kw">_</span>| (<span class="number">41</span>, <span class="number">53</span>))
+        .with_window_offset_handler(|<span class="kw">_</span>| (<span class="number">40</span>, <span class="number">53</span>))
         .init(<span class="kw-2">&amp;mut </span>Delay::new_default(), <span class="prelude-val">Some</span>(rst))
         .map_err(|e| <span class="macro">anyhow!</span>(<span class="string">&quot;{:?}&quot;</span>, e))<span class="question-mark">?</span>;
 
