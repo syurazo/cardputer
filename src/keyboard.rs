@@ -16,7 +16,7 @@
 use anyhow::Result;
 use esp_idf_hal::{
     gpio::{Gpio11, Gpio13, Gpio15, Gpio3, Gpio4, Gpio5, Gpio6, Gpio7, Gpio8, Gpio9},
-    gpio::{Input, Level, Output, PinDriver},
+    gpio::{Input, Level, Output, PinDriver, Pull},
     peripheral::Peripheral,
 };
 
@@ -282,7 +282,7 @@ impl<'a> Keyboard<'a> {
         y5: impl Peripheral<P = Gpio6> + 'a,
         y6: impl Peripheral<P = Gpio7> + 'a,
     ) -> Result<Self> {
-        Ok(Self {
+        let mut s = Self {
             addr0: PinDriver::output(a0)?,
             addr1: PinDriver::output(a1)?,
             addr2: PinDriver::output(a2)?,
@@ -293,7 +293,15 @@ impl<'a> Keyboard<'a> {
             y4: PinDriver::input(y4)?,
             y5: PinDriver::input(y5)?,
             y6: PinDriver::input(y6)?,
-        })
+        };
+        s.y0.set_pull(Pull::Up)?;
+        s.y1.set_pull(Pull::Up)?;
+        s.y2.set_pull(Pull::Up)?;
+        s.y3.set_pull(Pull::Up)?;
+        s.y4.set_pull(Pull::Up)?;
+        s.y5.set_pull(Pull::Up)?;
+        s.y6.set_pull(Pull::Up)?;
+        Ok(s)
     }
 
     /// Scan the keyboard and return the Vector of KeyImprint.
