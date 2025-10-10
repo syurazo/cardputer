@@ -15,8 +15,8 @@
 //! ```
 use anyhow::Result;
 use esp_idf_hal::{
+    gpio::{AnyIOPin, AnyOutputPin, IOPin, Input, Level, Output, OutputPin, PinDriver, Pull},
     gpio::{Gpio11, Gpio13, Gpio15, Gpio3, Gpio4, Gpio5, Gpio6, Gpio7, Gpio8, Gpio9},
-    gpio::{Input, Level, Output, PinDriver, Pull},
     peripheral::Peripheral,
 };
 
@@ -256,52 +256,42 @@ pub trait KeyboardScanner {
 /// let keys: Vec<KeyImprint> = keyboard.scan_pressed_keys().unwrap();
 /// ```
 pub struct Keyboard<'a> {
-    addr0: PinDriver<'a, Gpio8, Output>,
-    addr1: PinDriver<'a, Gpio9, Output>,
-    addr2: PinDriver<'a, Gpio11, Output>,
-    y0: PinDriver<'a, Gpio13, Input>,
-    y1: PinDriver<'a, Gpio15, Input>,
-    y2: PinDriver<'a, Gpio3, Input>,
-    y3: PinDriver<'a, Gpio4, Input>,
-    y4: PinDriver<'a, Gpio5, Input>,
-    y5: PinDriver<'a, Gpio6, Input>,
-    y6: PinDriver<'a, Gpio7, Input>,
+    addr: [PinDriver<'a, AnyOutputPin, Output>; 3],
+    inputs: [PinDriver<'a, AnyIOPin, Input>; 7],
 }
 impl<'a> Keyboard<'a> {
     /// Create new scanner.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        a0: impl Peripheral<P = Gpio8> + 'a,
-        a1: impl Peripheral<P = Gpio9> + 'a,
-        a2: impl Peripheral<P = Gpio11> + 'a,
-        y0: impl Peripheral<P = Gpio13> + 'a,
-        y1: impl Peripheral<P = Gpio15> + 'a,
-        y2: impl Peripheral<P = Gpio3> + 'a,
-        y3: impl Peripheral<P = Gpio4> + 'a,
-        y4: impl Peripheral<P = Gpio5> + 'a,
-        y5: impl Peripheral<P = Gpio6> + 'a,
-        y6: impl Peripheral<P = Gpio7> + 'a,
+        a0: impl Peripheral<P = Gpio8> + 'a + OutputPin,
+        a1: impl Peripheral<P = Gpio9> + 'a + OutputPin,
+        a2: impl Peripheral<P = Gpio11> + 'a + OutputPin,
+        y0: impl Peripheral<P = Gpio13> + 'a + IOPin,
+        y1: impl Peripheral<P = Gpio15> + 'a + IOPin,
+        y2: impl Peripheral<P = Gpio3> + 'a + IOPin,
+        y3: impl Peripheral<P = Gpio4> + 'a + IOPin,
+        y4: impl Peripheral<P = Gpio5> + 'a + IOPin,
+        y5: impl Peripheral<P = Gpio6> + 'a + IOPin,
+        y6: impl Peripheral<P = Gpio7> + 'a + IOPin,
     ) -> Result<Self> {
-        let mut s = Self {
-            addr0: PinDriver::output(a0)?,
-            addr1: PinDriver::output(a1)?,
-            addr2: PinDriver::output(a2)?,
-            y0: PinDriver::input(y0)?,
-            y1: PinDriver::input(y1)?,
-            y2: PinDriver::input(y2)?,
-            y3: PinDriver::input(y3)?,
-            y4: PinDriver::input(y4)?,
-            y5: PinDriver::input(y5)?,
-            y6: PinDriver::input(y6)?,
-        };
-        s.y0.set_pull(Pull::Up)?;
-        s.y1.set_pull(Pull::Up)?;
-        s.y2.set_pull(Pull::Up)?;
-        s.y3.set_pull(Pull::Up)?;
-        s.y4.set_pull(Pull::Up)?;
-        s.y5.set_pull(Pull::Up)?;
-        s.y6.set_pull(Pull::Up)?;
-        Ok(s)
+        let addr = [
+            PinDriver::output(a0.downgrade_output())?,
+            PinDriver::output(a1.downgrade_output())?,
+            PinDriver::output(a2.downgrade_output())?,
+        ];
+        let mut inputs = [
+            PinDriver::input(y0.downgrade())?,
+            PinDriver::input(y1.downgrade())?,
+            PinDriver::input(y2.downgrade())?,
+            PinDriver::input(y3.downgrade())?,
+            PinDriver::input(y4.downgrade())?,
+            PinDriver::input(y5.downgrade())?,
+            PinDriver::input(y6.downgrade())?,
+        ];
+        for pin in inputs.iter_mut() {
+            pin.set_pull(Pull::Up)?;
+        }
+        Ok(Self { addr, inputs })
     }
 
     /// Scan the keyboard and return the Vector of KeyImprint.
@@ -321,19 +311,10 @@ impl KeyboardScanner for Keyboard<'_> {
     fn scan_pressed_keytypes(&mut self) -> Result<Vec<KeyType>> {
         let mut keys: Vec<KeyType> = vec![];
         for i in 0..8 {
-            self.addr0.set_level(pin_level!(i & 0b00000001))?;
-            self.addr1.set_level(pin_level!(i & 0b00000010))?;
-            self.addr2.set_level(pin_level!(i & 0b00000100))?;
-
-            let inputs: [Level; 7] = [
-                self.y0.get_level(),
-                self.y1.get_level(),
-                self.y2.get_level(),
-                self.y3.get_level(),
-                self.y4.get_level(),
-                self.y5.get_level(),
-                self.y6.get_level(),
-            ];
+            for (j, ad) in self.addr.iter_mut().enumerate() {
+                ad.set_level(pin_level!(i & (0b00000001 << j)))?;
+            }
+            let inputs: Vec<Level> = self.inputs.iter().map(|x| x.get_level()).collect();
             for (j, decoded) in inputs.iter().enumerate() {
                 if *decoded == Level::High {
                     continue;
