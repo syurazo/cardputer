@@ -19,8 +19,9 @@ use esp_idf_hal::{
     gpio::{Gpio11, Gpio13, Gpio15, Gpio3, Gpio4, Gpio5, Gpio6, Gpio7, Gpio8, Gpio9},
     peripheral::Peripheral,
 };
+use std::hash::Hash;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum KeyImprint {
     Backquote,
     One,

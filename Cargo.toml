@@ -1,5 +1,5 @@
 [package]
-description = "Utilities for M5Stack Cardputer"
+description = "Utilities for M5Stack Cardputer and Cardputer-Adv"
 documentation = "https://syurazo.github.io/cardputer/"
 edition = "2024"
 keywords = ["m5stack", "cardputer"]

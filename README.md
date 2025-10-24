@@ -1,4 +1,4 @@
-# Utilities for M5Stack Cardputer
+# Utilities for M5Stack Cardputer and Cardputer-Adv
 
 ## Features
 
@@ -6,6 +6,7 @@
 * LCD backlight control
 * Decode 74HC138 and convert to keycode
 * Initialize I2C driver for Grove I/F
+* Key event capture for Cardputer-Adv keyboard
 
 ## Usage
 
