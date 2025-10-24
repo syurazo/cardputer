@@ -14,7 +14,7 @@
 
 ```
 [dependencies]
-cardputer = "0.1"
+cardputer = "0.2"
 ```
 
 ### Code:
