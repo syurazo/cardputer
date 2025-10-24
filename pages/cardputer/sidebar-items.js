@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["backlight","display","grove","keyboard"]};
+window.SIDEBAR_ITEMS = {"mod":["adv","backlight","display","grove","keyboard"]};

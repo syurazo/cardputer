@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["KeyEvent"],"struct":["KeyChord","KeyboardState","TCA8418RTWR"],"type":["KeyChordEvent","KeyImprintEvent"]};
