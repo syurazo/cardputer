@@ -4,7 +4,7 @@
 //! ### 4x14 keymap
 //!
 //! ```text
-//!  A2 A2 A0 |    Y0  |  Y1   |  Y2   |  Y3   |  Y4   |  Y5   |  Y6
+//!  A2 A1 A0 |    Y0  |  Y1   |  Y2   |  Y3   |  Y4   |  Y5   |  Y6
 //!  H  -  -  |  L     | L     | L     | L     | L     | L     | L
 //!  L  -  -  |      L |     L |     L |     L |     L |     L |     L
 //! ----------+--------+-------+-------+-------+-------+-------+-------
@@ -15,12 +15,13 @@
 //! ```
 use anyhow::Result;
 use esp_idf_hal::{
+    gpio::{AnyIOPin, AnyOutputPin, IOPin, Input, Level, Output, OutputPin, PinDriver, Pull},
     gpio::{Gpio11, Gpio13, Gpio15, Gpio3, Gpio4, Gpio5, Gpio6, Gpio7, Gpio8, Gpio9},
-    gpio::{Input, Level, Output, PinDriver},
     peripheral::Peripheral,
 };
+use std::hash::Hash;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum KeyImprint {
     Backquote,
     One,
@@ -145,74 +146,70 @@ macro_rules! normal {
 }
 
 const COLUMN_MAP: [[usize; 7]; 2] = [[1, 3, 5, 7, 9, 11, 13], [0, 2, 4, 6, 8, 10, 12]];
-const KEY_MAP: [[KeyType; 14]; 4] = [
+const KEY_MAP: [[KeyImprint; 14]; 4] = [
     [
-        KeyType::Modifier(KeyImprint::LeftCtrl),
-        KeyType::Modifier(KeyImprint::LeftOpt),
-        KeyType::Modifier(KeyImprint::LeftAlt),
-        normal!(KeyImprint::Z, graph!('z'), graph!('Z')),
-        normal!(KeyImprint::X, graph!('x'), graph!('X')),
-        normal!(KeyImprint::C, graph!('c'), graph!('C')),
-        normal!(KeyImprint::V, graph!('v'), graph!('V')),
-        normal!(KeyImprint::B, graph!('b'), graph!('B')),
-        normal!(KeyImprint::N, graph!('n'), graph!('N')),
-        normal!(KeyImprint::M, graph!('m'), graph!('M')),
-        normal!(KeyImprint::Comma, graph!(','), graph!('<')),
-        normal!(KeyImprint::Period, graph!('.'), graph!('>')),
-        normal!(KeyImprint::Slash, graph!('/'), graph!('?')),
-        normal!(KeyImprint::Space, Modified::Space, Modified::Space),
+        KeyImprint::LeftCtrl,
+        KeyImprint::LeftOpt,
+        KeyImprint::LeftAlt,
+        KeyImprint::Z,
+        KeyImprint::X,
+        KeyImprint::C,
+        KeyImprint::V,
+        KeyImprint::B,
+        KeyImprint::N,
+        KeyImprint::M,
+        KeyImprint::Comma,
+        KeyImprint::Period,
+        KeyImprint::Slash,
+        KeyImprint::Space,
     ],
     [
-        KeyType::Modifier(KeyImprint::LeftFn),
-        KeyType::Modifier(KeyImprint::LeftShift),
-        normal!(KeyImprint::A, graph!('a'), graph!('A')),
-        normal!(KeyImprint::S, graph!('s'), graph!('S')),
-        normal!(KeyImprint::D, graph!('d'), graph!('D')),
-        normal!(KeyImprint::F, graph!('f'), graph!('F')),
-        normal!(KeyImprint::G, graph!('g'), graph!('G')),
-        normal!(KeyImprint::H, graph!('h'), graph!('H')),
-        normal!(KeyImprint::J, graph!('j'), graph!('J')),
-        normal!(KeyImprint::K, graph!('k'), graph!('K')),
-        normal!(KeyImprint::L, graph!('l'), graph!('L')),
-        normal!(KeyImprint::SemiColon, graph!(';'), graph!(':')),
-        normal!(KeyImprint::Quote, graph!('\''), graph!('"')),
-        normal!(KeyImprint::Enter, Modified::Enter, Modified::Enter),
+        KeyImprint::LeftFn,
+        KeyImprint::LeftShift,
+        KeyImprint::A,
+        KeyImprint::S,
+        KeyImprint::D,
+        KeyImprint::F,
+        KeyImprint::G,
+        KeyImprint::H,
+        KeyImprint::J,
+        KeyImprint::K,
+        KeyImprint::L,
+        KeyImprint::SemiColon,
+        KeyImprint::Quote,
+        KeyImprint::Enter,
     ],
     [
-        normal!(KeyImprint::Tab, Modified::Tab, Modified::Tab),
-        normal!(KeyImprint::Q, graph!('q'), graph!('Q')),
-        normal!(KeyImprint::W, graph!('w'), graph!('W')),
-        normal!(KeyImprint::E, graph!('e'), graph!('E')),
-        normal!(KeyImprint::R, graph!('r'), graph!('R')),
-        normal!(KeyImprint::T, graph!('t'), graph!('T')),
-        normal!(KeyImprint::Y, graph!('y'), graph!('Y')),
-        normal!(KeyImprint::U, graph!('u'), graph!('U')),
-        normal!(KeyImprint::I, graph!('i'), graph!('I')),
-        normal!(KeyImprint::O, graph!('o'), graph!('O')),
-        normal!(KeyImprint::P, graph!('p'), graph!('P')),
-        normal!(KeyImprint::OpenSquareBracket, graph!('['), graph!('{')),
-        normal!(KeyImprint::CloseSquareBracket, graph!(']'), graph!('}')),
-        normal!(KeyImprint::Backslash, graph!('\\'), graph!('|')),
+        KeyImprint::Tab,
+        KeyImprint::Q,
+        KeyImprint::W,
+        KeyImprint::E,
+        KeyImprint::R,
+        KeyImprint::T,
+        KeyImprint::Y,
+        KeyImprint::U,
+        KeyImprint::I,
+        KeyImprint::O,
+        KeyImprint::P,
+        KeyImprint::OpenSquareBracket,
+        KeyImprint::CloseSquareBracket,
+        KeyImprint::Backslash,
     ],
     [
-        normal!(KeyImprint::Backquote, graph!('`'), graph!('~')),
-        normal!(KeyImprint::One, graph!('1'), graph!('!')),
-        normal!(KeyImprint::Two, graph!('2'), graph!('@')),
-        normal!(KeyImprint::Three, graph!('3'), graph!('#')),
-        normal!(KeyImprint::Four, graph!('4'), graph!('$')),
-        normal!(KeyImprint::Five, graph!('5'), graph!('%')),
-        normal!(KeyImprint::Six, graph!('6'), graph!('^')),
-        normal!(KeyImprint::Seven, graph!('7'), graph!('&')),
-        normal!(KeyImprint::Eight, graph!('8'), graph!('*')),
-        normal!(KeyImprint::Nine, graph!('9'), graph!('(')),
-        normal!(KeyImprint::Zero, graph!('0'), graph!(')')),
-        normal!(KeyImprint::Minus, graph!('-'), graph!('_')),
-        normal!(KeyImprint::Equal, graph!('='), graph!('+')),
-        normal!(
-            KeyImprint::Backspace,
-            Modified::Backspace,
-            Modified::Backspace
-        ),
+        KeyImprint::Backquote,
+        KeyImprint::One,
+        KeyImprint::Two,
+        KeyImprint::Three,
+        KeyImprint::Four,
+        KeyImprint::Five,
+        KeyImprint::Six,
+        KeyImprint::Seven,
+        KeyImprint::Eight,
+        KeyImprint::Nine,
+        KeyImprint::Zero,
+        KeyImprint::Minus,
+        KeyImprint::Equal,
+        KeyImprint::Backspace,
     ],
 ];
 
@@ -227,8 +224,8 @@ macro_rules! pin_level {
 
 /// Keyboard scanner trait
 pub trait KeyboardScanner {
-    /// Scan the keyboard and return the Vector of KeyType.
-    fn scan_pressed_keytypes(&mut self) -> Result<Vec<KeyType>>;
+    /// Scan the keyboard and return the Vector of KeyImprint.
+    fn scan_pressed_keys(&mut self) -> Result<Vec<KeyImprint>>;
 }
 
 /// Keyboard scanner for Cardputer
@@ -256,76 +253,53 @@ pub trait KeyboardScanner {
 /// let keys: Vec<KeyImprint> = keyboard.scan_pressed_keys().unwrap();
 /// ```
 pub struct Keyboard<'a> {
-    addr0: PinDriver<'a, Gpio8, Output>,
-    addr1: PinDriver<'a, Gpio9, Output>,
-    addr2: PinDriver<'a, Gpio11, Output>,
-    y0: PinDriver<'a, Gpio13, Input>,
-    y1: PinDriver<'a, Gpio15, Input>,
-    y2: PinDriver<'a, Gpio3, Input>,
-    y3: PinDriver<'a, Gpio4, Input>,
-    y4: PinDriver<'a, Gpio5, Input>,
-    y5: PinDriver<'a, Gpio6, Input>,
-    y6: PinDriver<'a, Gpio7, Input>,
+    addr: [PinDriver<'a, AnyOutputPin, Output>; 3],
+    inputs: [PinDriver<'a, AnyIOPin, Input>; 7],
 }
 impl<'a> Keyboard<'a> {
     /// Create new scanner.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        a0: impl Peripheral<P = Gpio8> + 'a,
-        a1: impl Peripheral<P = Gpio9> + 'a,
-        a2: impl Peripheral<P = Gpio11> + 'a,
-        y0: impl Peripheral<P = Gpio13> + 'a,
-        y1: impl Peripheral<P = Gpio15> + 'a,
-        y2: impl Peripheral<P = Gpio3> + 'a,
-        y3: impl Peripheral<P = Gpio4> + 'a,
-        y4: impl Peripheral<P = Gpio5> + 'a,
-        y5: impl Peripheral<P = Gpio6> + 'a,
-        y6: impl Peripheral<P = Gpio7> + 'a,
+        a0: impl Peripheral<P = Gpio8> + 'a + OutputPin,
+        a1: impl Peripheral<P = Gpio9> + 'a + OutputPin,
+        a2: impl Peripheral<P = Gpio11> + 'a + OutputPin,
+        y0: impl Peripheral<P = Gpio13> + 'a + IOPin,
+        y1: impl Peripheral<P = Gpio15> + 'a + IOPin,
+        y2: impl Peripheral<P = Gpio3> + 'a + IOPin,
+        y3: impl Peripheral<P = Gpio4> + 'a + IOPin,
+        y4: impl Peripheral<P = Gpio5> + 'a + IOPin,
+        y5: impl Peripheral<P = Gpio6> + 'a + IOPin,
+        y6: impl Peripheral<P = Gpio7> + 'a + IOPin,
     ) -> Result<Self> {
-        Ok(Self {
-            addr0: PinDriver::output(a0)?,
-            addr1: PinDriver::output(a1)?,
-            addr2: PinDriver::output(a2)?,
-            y0: PinDriver::input(y0)?,
-            y1: PinDriver::input(y1)?,
-            y2: PinDriver::input(y2)?,
-            y3: PinDriver::input(y3)?,
-            y4: PinDriver::input(y4)?,
-            y5: PinDriver::input(y5)?,
-            y6: PinDriver::input(y6)?,
-        })
-    }
-
-    /// Scan the keyboard and return the Vector of KeyImprint.
-    ///
-    /// **This method may be deprecated**
-    pub fn scan_pressed_keys(&mut self) -> Result<Vec<KeyImprint>> {
-        let keys = self
-            .scan_pressed_keytypes()?
-            .iter()
-            .map(|x| x.imprint())
-            .collect();
-        Ok(keys)
+        let addr = [
+            PinDriver::output(a0.downgrade_output())?,
+            PinDriver::output(a1.downgrade_output())?,
+            PinDriver::output(a2.downgrade_output())?,
+        ];
+        let mut inputs = [
+            PinDriver::input(y0.downgrade())?,
+            PinDriver::input(y1.downgrade())?,
+            PinDriver::input(y2.downgrade())?,
+            PinDriver::input(y3.downgrade())?,
+            PinDriver::input(y4.downgrade())?,
+            PinDriver::input(y5.downgrade())?,
+            PinDriver::input(y6.downgrade())?,
+        ];
+        for pin in inputs.iter_mut() {
+            pin.set_pull(Pull::Up)?;
+        }
+        Ok(Self { addr, inputs })
     }
 }
 
 impl KeyboardScanner for Keyboard<'_> {
-    fn scan_pressed_keytypes(&mut self) -> Result<Vec<KeyType>> {
-        let mut keys: Vec<KeyType> = vec![];
+    fn scan_pressed_keys(&mut self) -> Result<Vec<KeyImprint>> {
+        let mut keys: Vec<KeyImprint> = vec![];
         for i in 0..8 {
-            self.addr0.set_level(pin_level!(i & 0b00000001))?;
-            self.addr1.set_level(pin_level!(i & 0b00000010))?;
-            self.addr2.set_level(pin_level!(i & 0b00000100))?;
-
-            let inputs: [Level; 7] = [
-                self.y0.get_level(),
-                self.y1.get_level(),
-                self.y2.get_level(),
-                self.y3.get_level(),
-                self.y4.get_level(),
-                self.y5.get_level(),
-                self.y6.get_level(),
-            ];
+            for (j, ad) in self.addr.iter_mut().enumerate() {
+                ad.set_level(pin_level!(i & (0b00000001 << j)))?;
+            }
+            let inputs: Vec<Level> = self.inputs.iter().map(|x| x.get_level()).collect();
             for (j, decoded) in inputs.iter().enumerate() {
                 if *decoded == Level::High {
                     continue;
@@ -396,16 +370,17 @@ impl KeyboardState {
         self.is_shift_pressed = false;
         self.is_alt_pressed = false;
 
-        for pressed in keyboard.scan_pressed_keytypes()?.iter() {
-            match pressed {
+        for pressed in keyboard.scan_pressed_keys()?.into_iter() {
+            let key_type: KeyType = pressed.into();
+            match key_type {
                 KeyType::Modifier(KeyImprint::LeftFn) => self.is_fn_pressed = true,
                 KeyType::Modifier(KeyImprint::LeftCtrl) => self.is_ctrl_pressed = true,
                 KeyType::Modifier(KeyImprint::LeftShift) => self.is_shift_pressed = true,
                 KeyType::Modifier(KeyImprint::LeftAlt) => self.is_alt_pressed = true,
                 KeyType::Normal(h) => {
-                    new_hold_keys.push(*h);
-                    if !self.hold_keys.contains(h) {
-                        self.pressed_keys.push(*h);
+                    new_hold_keys.push(h);
+                    if !self.hold_keys.contains(&h) {
+                        self.pressed_keys.push(h);
                     }
                 }
                 _ => {}
@@ -458,5 +433,72 @@ impl KeyboardState {
 
     pub fn is_alt_pressed(&self) -> bool {
         self.is_alt_pressed
+    }
+}
+
+impl From<KeyImprint> for KeyType {
+    fn from(imprint: KeyImprint) -> Self {
+        match imprint {
+            KeyImprint::Backquote => normal!(KeyImprint::Backquote, graph!('`'), graph!('~')),
+            KeyImprint::One => normal!(KeyImprint::One, graph!('1'), graph!('!')),
+            KeyImprint::Two => normal!(KeyImprint::Two, graph!('2'), graph!('@')),
+            KeyImprint::Three => normal!(KeyImprint::Three, graph!('3'), graph!('#')),
+            KeyImprint::Four => normal!(KeyImprint::Four, graph!('4'), graph!('$')),
+            KeyImprint::Five => normal!(KeyImprint::Five, graph!('5'), graph!('%')),
+            KeyImprint::Six => normal!(KeyImprint::Six, graph!('6'), graph!('^')),
+            KeyImprint::Seven => normal!(KeyImprint::Seven, graph!('7'), graph!('&')),
+            KeyImprint::Eight => normal!(KeyImprint::Eight, graph!('8'), graph!('*')),
+            KeyImprint::Nine => normal!(KeyImprint::Nine, graph!('9'), graph!('(')),
+            KeyImprint::Zero => normal!(KeyImprint::Zero, graph!('0'), graph!(')')),
+            KeyImprint::Minus => normal!(KeyImprint::Minus, graph!('-'), graph!('_')),
+            KeyImprint::Equal => normal!(KeyImprint::Equal, graph!('='), graph!('+')),
+            KeyImprint::Backspace => normal!(
+                    KeyImprint::Backspace,
+                    Modified::Backspace,
+                    Modified::Backspace
+                ),
+            KeyImprint::Tab => normal!(KeyImprint::Tab, Modified::Tab, Modified::Tab),
+            KeyImprint::Q => normal!(KeyImprint::Q, graph!('q'), graph!('Q')),
+            KeyImprint::W => normal!(KeyImprint::W, graph!('w'), graph!('W')),
+            KeyImprint::E => normal!(KeyImprint::E, graph!('e'), graph!('E')),
+            KeyImprint::R => normal!(KeyImprint::R, graph!('r'), graph!('R')),
+            KeyImprint::T => normal!(KeyImprint::T, graph!('t'), graph!('T')),
+            KeyImprint::Y => normal!(KeyImprint::Y, graph!('y'), graph!('Y')),
+            KeyImprint::U => normal!(KeyImprint::U, graph!('u'), graph!('U')),
+            KeyImprint::I => normal!(KeyImprint::I, graph!('i'), graph!('I')),
+            KeyImprint::O => normal!(KeyImprint::O, graph!('o'), graph!('O')),
+            KeyImprint::P => normal!(KeyImprint::P, graph!('p'), graph!('P')),
+            KeyImprint::OpenSquareBracket => normal!(KeyImprint::OpenSquareBracket, graph!('['), graph!('{')),
+            KeyImprint::CloseSquareBracket => normal!(KeyImprint::CloseSquareBracket, graph!(']'), graph!('}')),
+            KeyImprint::Backslash => normal!(KeyImprint::Backslash, graph!('\\'), graph!('|')),
+            KeyImprint::LeftFn => KeyType::Modifier(KeyImprint::LeftFn),
+            KeyImprint::LeftShift => KeyType::Modifier(KeyImprint::LeftShift),
+            KeyImprint::A => normal!(KeyImprint::A, graph!('a'), graph!('A')),
+            KeyImprint::S => normal!(KeyImprint::S, graph!('s'), graph!('S')),
+            KeyImprint::D => normal!(KeyImprint::D, graph!('d'), graph!('D')),
+            KeyImprint::F => normal!(KeyImprint::F, graph!('f'), graph!('F')),
+            KeyImprint::G => normal!(KeyImprint::G, graph!('g'), graph!('G')),
+            KeyImprint::H => normal!(KeyImprint::H, graph!('h'), graph!('H')),
+            KeyImprint::J => normal!(KeyImprint::J, graph!('j'), graph!('J')),
+            KeyImprint::K => normal!(KeyImprint::K, graph!('k'), graph!('K')),
+            KeyImprint::L => normal!(KeyImprint::L, graph!('l'), graph!('L')),
+            KeyImprint::SemiColon => normal!(KeyImprint::SemiColon, graph!(';'), graph!(':')),
+            KeyImprint::Quote => normal!(KeyImprint::Quote, graph!('\''), graph!('"')),
+            KeyImprint::Enter => normal!(KeyImprint::Enter, Modified::Enter, Modified::Enter),
+            KeyImprint::LeftCtrl => KeyType::Modifier(KeyImprint::LeftCtrl),
+            KeyImprint::LeftOpt => KeyType::Modifier(KeyImprint::LeftOpt),
+            KeyImprint::LeftAlt => KeyType::Modifier(KeyImprint::LeftAlt),
+            KeyImprint::Z => normal!(KeyImprint::Z, graph!('z'), graph!('Z')),
+            KeyImprint::X => normal!(KeyImprint::X, graph!('x'), graph!('X')),
+            KeyImprint::C => normal!(KeyImprint::C, graph!('c'), graph!('C')),
+            KeyImprint::V => normal!(KeyImprint::V, graph!('v'), graph!('V')),
+            KeyImprint::B => normal!(KeyImprint::B, graph!('b'), graph!('B')),
+            KeyImprint::N => normal!(KeyImprint::N, graph!('n'), graph!('N')),
+            KeyImprint::M => normal!(KeyImprint::M, graph!('m'), graph!('M')),
+            KeyImprint::Comma => normal!(KeyImprint::Comma, graph!(','), graph!('<')),
+            KeyImprint::Period => normal!(KeyImprint::Period, graph!('.'), graph!('>')),
+            KeyImprint::Slash => normal!(KeyImprint::Slash, graph!('/'), graph!('?')),
+            KeyImprint::Space => normal!(KeyImprint::Space, Modified::Space, Modified::Space),
+        }
     }
 }
